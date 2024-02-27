@@ -78,9 +78,9 @@ jobs:
           echo "PR created time is $PR_CREATED_AT_UNIX"
           echo "created_at=$PR_CREATED_AT_UNIX" >> $GITHUB_OUTPUT
 
-          ADDITIONS=$(echo $PR_DETAILS | jq .additions)
-          DELETIONS=$(echo $PR_DETAILS | jq .deletions)
-          CHANGED_FILES=$(echo $PR_DETAILS | jq .changed_files)
+          ADDITIONS=$(echo $PR_DETAILS | jq -r .additions)
+          DELETIONS=$(echo $PR_DETAILS | jq -r .deletions)
+          CHANGED_FILES=$(echo $PR_DETAILS | jq -r .changed_files)
 
           echo "PR additions is $ADDITIONS"
           echo "PR deletions is $DELETIONS"
@@ -98,7 +98,7 @@ jobs:
           EVENTS=$(curl -H "Authorization: token $GITHUB_TOKEN" \
                          -H "Accept: application/vnd.github.v3+json" \
                          "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/events")
-          REVIEW_REQUESTED_AT=$(echo $EVENTS | jq '[.[] | select(.event == "review_requested")][0] | .created_at')
+          REVIEW_REQUESTED_AT=$(echo $EVENTS | jq -r '[.[] | select(.event == "review_requested")][0] | .created_at')
           REVIEW_REQUESTED_AT_UNIX=$(date -u -d $REVIEW_REQUESTED_AT +"%s")
           echo "PR review requested time is $REVIEW_REQUESTED_AT_UNIX"
           echo "requested_at=$REVIEW_REQUESTED_AT_UNIX" >> $GITHUB_OUTPUT
