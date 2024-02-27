@@ -1,0 +1,94 @@
+name: PR Merge Time Difference
+
+on:
+  pull_request:
+    types: [closed]
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  pr_analytics:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # fetch all history so we can access all commits
+
+      - name: Get PR Creator
+        id: pr_creator
+        run: |
+          PR_CREATOR=${{ github.event.pull_request.user.login }}
+          echo "name=$PR_CREATOR" >> $GITHUB_OUTPUT
+
+      - name: Get PR Merged By
+        id: merged_by
+        run: |
+          MERGED_BY=${{ github.event.pull_request.merged_by.login }}
+          echo "name=$MERGED_BY" >> $GITHUB_OUTPUT
+
+      - name: Get PR labels
+        id: pr_labels
+        run: |
+          LABELS=$(curl -H "Authorization: token $GITHUB_TOKEN" \
+                        -H "Accept: application/vnd.github.v3+json" \
+                        "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels")
+
+          HAS_HOTFIX_LABEL=$(echo $LABELS | jq -r '.[] | select(.name == "hotfix") | .name')
+
+          if [ "$HAS_HOTFIX_LABEL" == "hotfix" ]; then
+            echo "is_hotfix=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_hotfix=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get First Commit Time
+        id: first_commit_time
+        run: |
+          PR_COMMITS=$(curl -H "Authorization: token $GITHUB_TOKEN" \
+                            -H "Accept: application/vnd.github.v3+json" \
+                            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits")
+          FIRST_COMMIT_SHA=$(echo $PR_COMMITS | jq -r '.[0].sha')
+          FIRST_COMMIT_TIME=$(git show -s --format=%ct $FIRST_COMMIT_SHA)
+          echo "time=$FIRST_COMMIT_TIME" >> $GITHUB_OUTPUT
+
+      - name: Get PR Details
+        id: pr_details
+        run: |
+          PR_DETAILS=$(curl -H "Authorization: token $GITHUB_TOKEN" \
+                            -H "Accept: application/vnd.github.v3+json" \
+                            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}")
+          PR_CREATED_AT=$(echo $PR_DETAILS | jq -r '.created_at')
+          PR_CREATED_AT_UNIX=$(date -u -d "$PR_CREATED_AT" +"%s")
+          echo "time=$PR_CREATED_AT_UNIX" >> $GITHUB_OUTPUT
+
+          ADDITIONS=$(echo $PR_DETAILS | jq .additions)
+          DELETIONS=$(echo $PR_DETAILS | jq .deletions)
+          CHANGED_FILES=$(echo $PR_DETAILS | jq .changed_files)
+
+          echo "additions=$ADDITIONS" >> $GITHUB_OUTPUT
+          echo "deletions=$DELETIONS" >> $GITHUB_OUTPUT
+          echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+
+      - name: Get PR Approval Time
+        run: |
+          REVIEWS=$(curl -H "Authorization: token $GITHUB_TOKEN" \
+                         -H "Accept: application/vnd.github.v3+json" \
+                         "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews")
+          FIRST_APPROVED_AT=$(echo $REVIEWS | jq -r '[.[] | select(.state == "APPROVED") | .submitted_at] | sort | .[0]')
+          FIRST_APPROVED_AT_UNIX=$(date -u -d "$FIRST_APPROVED_AT" +"%s")
+          echo "time=$FIRST_APPROVED_AT_UNIX" >> $GITHUB_OUTPUT
+
+      - name: Get Merge Commit Time
+        id: merge_commit_time
+        run: |
+          MERGE_COMMIT_SHA=${{ github.event.pull_request.merge_commit_sha }}
+          MERGE_COMMIT_TIME=$(git show -s --format=%ct $MARGE_COMMIT_SHA)
+          echo "time=$MERGE_COMMIT_TIME" >> $GITHUB_OUTPUT
+
+      - name: Calculate Time Difference
+        run: |
+          DIFFERENCE=$((${{ steps.merge_commit_time.outputs.time }} - ${{ steps.first_commit_time.outputs.time }}))
+          echo "Time difference in seconds: $DIFFERENCE"
