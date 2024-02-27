@@ -14,10 +14,15 @@ jobs:
         with:
           fetch-depth: 0 # fetch all history so we can access all commits
 
+      - name: Set PR and Base Branch Names
+        run: |
+          echo "BASE_BRANCH=${{ github.event.pull_request.base.ref }}" >> $GITHUB_ENV
+          echo "PR_BRANCH=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+
       - name: Get First PR Commit SHA
         id: first_commit
         run: |
-          FIRST_COMMIT_SHA=$(git rev-list --max-parents=0 HEAD)
+          FIRST_COMMIT_SHA=$(git log --reverse --format="%H" $BASE_BRANCH..$PR_BRANCH | head -n 1)
           echo "First commit in PR is $FIRST_COMMIT_SHA"
           echo "sha=$FIRST_COMMIT_SHA" >> $GITHUB_OUTPUT
 
