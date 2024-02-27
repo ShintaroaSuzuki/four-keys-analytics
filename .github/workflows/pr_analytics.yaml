@@ -74,7 +74,7 @@ jobs:
                             -H "Accept: application/vnd.github.v3+json" \
                             "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}")
           PR_CREATED_AT=$(echo $PR_DETAILS | jq -r '.created_at')
-          PR_CREATED_AT_UNIX=$(date -u -d "$PR_CREATED_AT" +"%s")
+          PR_CREATED_AT_UNIX=$(date -u -d $PR_CREATED_AT +"%s")
           echo "PR created time is $PR_CREATED_AT_UNIX"
           echo "created_at=$PR_CREATED_AT_UNIX" >> $GITHUB_OUTPUT
 
@@ -99,7 +99,7 @@ jobs:
                          -H "Accept: application/vnd.github.v3+json" \
                          "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/events")
           REVIEW_REQUESTED_AT=$(echo $EVENTS | jq '[.[] | select(.event == "review_requested")][0] | .created_at')
-          REVIEW_REQUESTED_AT_UNIX=$(date -u -d "$REVIEW_REQUESTED_AT" +"%s")
+          REVIEW_REQUESTED_AT_UNIX=$(date -u -d $REVIEW_REQUESTED_AT +"%s")
           echo "PR review requested time is $REVIEW_REQUESTED_AT_UNIX"
           echo "requested_at=$REVIEW_REQUESTED_AT_UNIX" >> $GITHUB_OUTPUT
 
@@ -110,7 +110,7 @@ jobs:
                          -H "Accept: application/vnd.github.v3+json" \
                          "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews")
           FIRST_APPROVED_AT=$(echo $REVIEWS | jq -r '[.[] | select(.state == "APPROVED") | .submitted_at] | sort | .[0]')
-          FIRST_APPROVED_AT_UNIX=$(date -u -d "$FIRST_APPROVED_AT" +"%s")
+          FIRST_APPROVED_AT_UNIX=$(date -u -d $FIRST_APPROVED_AT +"%s")
           echo "PR approved time is $FIRST_APPROVED_AT_UNIX"
           echo "approved_at=$FIRST_APPROVED_AT_UNIX" >> $GITHUB_OUTPUT
 
