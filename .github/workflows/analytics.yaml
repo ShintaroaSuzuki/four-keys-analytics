@@ -15,7 +15,7 @@ jobs:
           fetch-depth: 0 # fetch all history so we can access all commits
 
       - name: Get First Commit SHA
-        id: get_pr_commits
+        id: first_commit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
