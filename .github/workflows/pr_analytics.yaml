@@ -22,18 +22,21 @@ jobs:
         run: |
           REPO_FULL_NAME=$GITHUB_REPOSITORY
           REPO_NAME="${REPO_FULL_NAME#*/}"
+          echo "Repository name is $REPO_NAME"
           echo "name=$REPO_NAME" >> $GITHUB_OUTPUT
 
       - name: Get PR Creator
         id: pr_creator
         run: |
           PR_CREATOR=${{ github.event.pull_request.user.login }}
+          echo "PR creator is $PR_CREATOR"
           echo "name=$PR_CREATOR" >> $GITHUB_OUTPUT
 
       - name: Get PR Merged By
         id: merged_by
         run: |
           MERGED_BY=${{ github.event.pull_request.merged_by.login }}
+          echo "PR merged by $MERGED_BY"
           echo "name=$MERGED_BY" >> $GITHUB_OUTPUT
 
       - name: Get PR labels
@@ -46,8 +49,10 @@ jobs:
           HAS_HOTFIX_LABEL=$(echo $LABELS | jq -r '.[] | select(.name == "hotfix") | .name')
 
           if [ "$HAS_HOTFIX_LABEL" == "hotfix" ]; then
+            echo "PR has hotfix label"
             echo "is_hotfix=true" >> $GITHUB_OUTPUT
           else
+            echo "PR don't have hotfix label"
             echo "is_hotfix=false" >> $GITHUB_OUTPUT
           fi
 
@@ -59,6 +64,7 @@ jobs:
                             "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits")
           FIRST_COMMIT_SHA=$(echo $PR_COMMITS | jq -r '.[0].sha')
           FIRST_COMMIT_TIME=$(git show -s --format=%ct $FIRST_COMMIT_SHA)
+          echo "First commit time is $FIRST_COMMIT_TIME"
           echo "commited_at=$FIRST_COMMIT_TIME" >> $GITHUB_OUTPUT
 
       - name: Get PR Details
@@ -69,11 +75,16 @@ jobs:
                             "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}")
           PR_CREATED_AT=$(echo $PR_DETAILS | jq -r '.created_at')
           PR_CREATED_AT_UNIX=$(date -u -d "$PR_CREATED_AT" +"%s")
+          echo "PR created time is $PR_CREATED_AT_UNIX"
           echo "created_at=$PR_CREATED_AT_UNIX" >> $GITHUB_OUTPUT
 
           ADDITIONS=$(echo $PR_DETAILS | jq .additions)
           DELETIONS=$(echo $PR_DETAILS | jq .deletions)
           CHANGED_FILES=$(echo $PR_DETAILS | jq .changed_files)
+
+          echo "PR additions is $ADDITIONS"
+          echo "PR deletions is $DELETIONS"
+          echo "PR changed files is $CHANGED_FILES"
 
           echo "additions=$ADDITIONS" >> $GITHUB_OUTPUT
           echo "deletions=$DELETIONS" >> $GITHUB_OUTPUT
@@ -89,6 +100,7 @@ jobs:
                          "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/events")
           REVIEW_REQUESTED_AT=$(echo $EVENTS | jq '[.[] | select(.event == "review_requested")][0] | .created_at')
           REVIEW_REQUESTED_AT_UNIX=$(date -u -d "$REVIEW_REQUESTED_AT" +"%s")
+          echo "PR review requested time is $REVIEW_REQUESTED_AT_UNIX"
           echo "requested_at=$REVIEW_REQUESTED_AT_UNIX" >> $GITHUB_OUTPUT
 
       - name: Get PR Approval Time
@@ -99,6 +111,7 @@ jobs:
                          "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews")
           FIRST_APPROVED_AT=$(echo $REVIEWS | jq -r '[.[] | select(.state == "APPROVED") | .submitted_at] | sort | .[0]')
           FIRST_APPROVED_AT_UNIX=$(date -u -d "$FIRST_APPROVED_AT" +"%s")
+          echo "PR approved time is $FIRST_APPROVED_AT_UNIX"
           echo "approved_at=$FIRST_APPROVED_AT_UNIX" >> $GITHUB_OUTPUT
 
       - name: Get Merge Commit Time
@@ -106,6 +119,7 @@ jobs:
         run: |
           MERGE_COMMIT_SHA=${{ github.event.pull_request.merge_commit_sha }}
           MERGE_COMMIT_TIME=$(git show -s --format=%ct $MARGE_COMMIT_SHA)
+          echo "PR merged time is $MERGE_COMMIT_TIME"
           echo "merged_at=$MERGE_COMMIT_TIME" >> $GITHUB_OUTPUT
 
       - name: Calculate Seconds From First Commit To PR Open
